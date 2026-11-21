@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "toko-online-astro",
+  "compatibility_date": "2026-11-21",
+  // step-00: situs statis — Worker hanya menyajikan file dari dist/
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}
