@@ -1,0 +1,149 @@
+---
+// Header dipakai bersama oleh semua halaman. Badge keranjang diperbarui
+// dari modul keranjang.ts lewat event, jadi tidak ada logika ganda.
+---
+
+<header class="site-header">
+	<div class="container header-inner">
+		<a class="brand" href="/">
+			<span class="brand-mark" aria-hidden="true">✦</span>
+			<span>Toko Online Gratis</span>
+		</a>
+
+		<div class="header-right">
+			<span class="header-note">Belanja sederhana, harga bersahabat</span>
+			<a class="cart-link" href="/keranjang">
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.8"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<circle cx="9" cy="20" r="1.4"></circle>
+					<circle cx="18" cy="20" r="1.4"></circle>
+					<path d="M2.5 3.5h2.2l2.2 11h11.2l2.1-8H6.2"></path>
+				</svg>
+				<span class="cart-count" data-cart-count aria-hidden="true">0</span>
+				<span class="sr-only" data-cart-sr aria-live="polite">Keranjang, 0 item</span>
+			</a>
+		</div>
+	</div>
+</header>
+
+<script>
+	import { initBadgeKeranjang } from '../lib/keranjang';
+
+	initBadgeKeranjang();
+</script>
+
+<style>
+	.site-header {
+		background: #fff;
+		border-bottom: 1px solid #e7e4dd;
+	}
+
+	.header-inner {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding-block: 1rem;
+	}
+
+	.brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: inherit;
+		font-weight: 700;
+		font-size: 1.05rem;
+		text-decoration: none;
+	}
+
+	.brand-mark {
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 0.65rem;
+		background: #166534;
+		color: #fff;
+		font-size: 1rem;
+	}
+
+	.header-right {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+	}
+
+	.header-note {
+		color: #6b6862;
+		font-size: 0.875rem;
+	}
+
+	.cart-link {
+		position: relative;
+		display: inline-grid;
+		place-items: center;
+		width: 2.6rem;
+		height: 2.6rem;
+		color: #166534;
+		border: 1px solid #e7e4dd;
+		border-radius: 0.75rem;
+		text-decoration: none;
+	}
+
+	.cart-link:hover {
+		background: #f0f7f2;
+	}
+
+	.cart-link:focus-visible {
+		outline: 3px solid #166534;
+		outline-offset: 2px;
+	}
+
+	.cart-link svg {
+		width: 1.4rem;
+		height: 1.4rem;
+	}
+
+	.cart-count {
+		position: absolute;
+		top: -0.4rem;
+		right: -0.4rem;
+		min-width: 1.3rem;
+		height: 1.3rem;
+		padding-inline: 0.25rem;
+		display: grid;
+		place-items: center;
+		border-radius: 999px;
+		background: #166534;
+		color: #fff;
+		font-size: 0.75rem;
+		font-weight: 700;
+		line-height: 1;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	@media (max-width: 32rem) {
+		.header-note {
+			display: none;
+		}
+	}
+</style>

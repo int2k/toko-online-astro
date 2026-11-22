@@ -1,10 +1,8 @@
 ---
-import {
-	formatRupiah,
-	getProductImageUrl,
-	getProducts,
-	type Product,
-} from '../../lib/products';
+import SiteHeader from '../../components/SiteHeader.astro';
+import '../../styles/global.css';
+import { formatRupiah } from '../../lib/format';
+import { getProductImageUrl, getProducts, type Product } from '../../lib/products';
 
 interface Props {
 	product: Product;
@@ -45,15 +43,7 @@ const description = product.description?.trim() || 'Deskripsi belum tersedia unt
 		<title>{product.name} | Toko Online Gratis</title>
 	</head>
 	<body>
-		<header class="site-header">
-			<div class="container header-inner">
-				<a class="brand" href="/">
-					<span class="brand-mark" aria-hidden="true">✦</span>
-					<span>Toko Online Gratis</span>
-				</a>
-				<span class="header-note">Belanja sederhana, harga bersahabat</span>
-			</div>
-		</header>
+		<SiteHeader />
 
 		<main class="container">
 			<nav class="breadcrumb" aria-label="Navigasi">
@@ -89,6 +79,21 @@ const description = product.description?.trim() || 'Deskripsi belum tersedia unt
 					<h1>{product.name}</h1>
 					<p class="price">{formatRupiah(product.price)}</p>
 
+					<button
+						id="tambah-keranjang"
+						class="tambah-keranjang"
+						type="button"
+						data-slug={product.slug}
+						data-name={product.name}
+						data-price={product.price}
+						data-image={imageUrl ?? ''}
+					>
+						Tambah ke keranjang
+					</button>
+					<p class="cart-feedback" role="status" data-cart-feedback hidden>
+						Produk ditambahkan ke keranjang.
+					</p>
+
 					<section class="description">
 						<h2>Deskripsi</h2>
 						<p>{description}</p>
@@ -105,83 +110,33 @@ const description = product.description?.trim() || 'Deskripsi belum tersedia unt
 			</div>
 		</footer>
 
+		<script>
+			import { tambahItem } from '../../lib/keranjang';
+
+			const tombol = document.querySelector<HTMLButtonElement>('#tambah-keranjang');
+			const umpan = document.querySelector<HTMLElement>('[data-cart-feedback]');
+
+			tombol?.addEventListener('click', () => {
+				const { slug, name, price, image } = tombol.dataset;
+				if (!slug || !name) return;
+
+				tambahItem({
+					slug,
+					name,
+					price: Number(price),
+					image: image ?? '',
+				});
+
+				if (umpan) {
+					umpan.hidden = false;
+					window.setTimeout(() => {
+						umpan.hidden = true;
+					}, 2500);
+				}
+			});
+		</script>
+
 		<style>
-			:global(*) {
-				box-sizing: border-box;
-			}
-
-			:global(body) {
-				margin: 0;
-				background: #f8f7f4;
-				color: #1c1b19;
-				font-family:
-					system-ui,
-					-apple-system,
-					'BlinkMacSystemFont',
-					'Segoe UI',
-					sans-serif;
-				line-height: 1.5;
-			}
-
-			.container {
-				width: min(100% - 2rem, 72rem);
-				margin-inline: auto;
-			}
-
-			.site-header {
-				background: #fff;
-				border-bottom: 1px solid #e7e4dd;
-			}
-
-			.header-inner {
-				display: flex;
-				flex-wrap: wrap;
-				align-items: center;
-				justify-content: space-between;
-				gap: 0.75rem;
-				padding-block: 1rem;
-			}
-
-			.brand {
-				display: inline-flex;
-				align-items: center;
-				gap: 0.5rem;
-				color: inherit;
-				font-weight: 700;
-				font-size: 1.05rem;
-				text-decoration: none;
-			}
-
-			.brand-mark {
-				display: grid;
-				place-items: center;
-				width: 2rem;
-				height: 2rem;
-				border-radius: 0.65rem;
-				background: #166534;
-				color: #fff;
-				font-size: 1rem;
-			}
-
-			.header-note {
-				color: #6b6862;
-				font-size: 0.875rem;
-			}
-
-			.breadcrumb {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.5rem;
-				align-items: center;
-				padding-block: 1.5rem 0;
-				color: #6b6862;
-				font-size: 0.875rem;
-			}
-
-			.breadcrumb a {
-				color: #166534;
-			}
-
 			.detail {
 				display: grid;
 				grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
@@ -203,12 +158,6 @@ const description = product.description?.trim() || 'Deskripsi belum tersedia unt
 				width: 100%;
 				height: 100%;
 				object-fit: cover;
-			}
-
-			.placeholder {
-				display: grid;
-				place-items: center;
-				color: #a9a49a;
 			}
 
 			.placeholder svg {
@@ -239,6 +188,35 @@ const description = product.description?.trim() || 'Deskripsi belum tersedia unt
 				font-weight: 700;
 			}
 
+			.tambah-keranjang {
+				margin-top: 1.5rem;
+				padding: 0.8rem 1.4rem;
+				width: fit-content;
+				border: 0;
+				border-radius: 0.75rem;
+				background: #166534;
+				color: #fff;
+				font: inherit;
+				font-weight: 700;
+				cursor: pointer;
+			}
+
+			.tambah-keranjang:hover {
+				background: #14532d;
+			}
+
+			.tambah-keranjang:focus-visible {
+				outline: 3px solid #166534;
+				outline-offset: 3px;
+			}
+
+			.cart-feedback {
+				margin: 0.75rem 0 0;
+				color: #166534;
+				font-size: 0.9rem;
+				font-weight: 600;
+			}
+
 			.description {
 				margin-top: 2rem;
 				padding-top: 1.5rem;
@@ -262,16 +240,6 @@ const description = product.description?.trim() || 'Deskripsi belum tersedia unt
 				font-weight: 600;
 			}
 
-			.site-footer {
-				border-top: 1px solid #e7e4dd;
-				padding-block: 1.5rem;
-				color: #6b6862;
-				font-size: 0.875rem;
-			}
-
-			.site-footer p {
-				margin: 0;
-			}
 		</style>
 	</body>
 </html>

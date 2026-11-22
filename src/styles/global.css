@@ -1,0 +1,56 @@
+/* Aturan bersama untuk semua halaman. Diimpor dari frontmatter tiap halaman. */
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: #f8f7f4;
+	color: #1c1b19;
+	font-family:
+		system-ui,
+		-apple-system,
+		'BlinkMacSystemFont',
+		'Segoe UI',
+		sans-serif;
+	line-height: 1.5;
+}
+
+/* Batas lebar konten, dipakai header dan <main> */
+.container {
+	width: min(100% - 2rem, 72rem);
+	margin-inline: auto;
+}
+
+.breadcrumb {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+	padding-block: 1.5rem 0;
+	color: #6b6862;
+	font-size: 0.875rem;
+}
+
+.breadcrumb a {
+	color: #166534;
+}
+
+.site-footer {
+	border-top: 1px solid #e7e4dd;
+	padding-block: 1.5rem;
+	color: #6b6862;
+	font-size: 0.875rem;
+}
+
+.site-footer p {
+	margin: 0;
+}
+
+/* Dasar placeholder; ukuran ikon ditentukan masing-masing halaman */
+.placeholder {
+	display: grid;
+	place-items: center;
+	color: #a9a49a;
+}

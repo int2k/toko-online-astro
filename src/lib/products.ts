@@ -12,13 +12,6 @@ export type Product = {
 
 const STORAGE_BUCKET = import.meta.env.PUBLIC_SUPABASE_STORAGE_BUCKET || 'products';
 
-export const formatRupiah = (value: number) =>
-	new Intl.NumberFormat('id-ID', {
-		style: 'currency',
-		currency: 'IDR',
-		maximumFractionDigits: 0,
-	}).format(value);
-
 /**
  * Kolom image_url bisa berisi URL penuh, atau path objek di bucket Storage publik.
  * Kalau berupa path, URL publiknya dibuat dengan getPublicUrl (tanpa request jaringan).

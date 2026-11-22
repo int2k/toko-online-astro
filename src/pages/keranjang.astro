@@ -1,0 +1,302 @@
+---
+import SiteHeader from '../components/SiteHeader.astro';
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content="Keranjang belanja Toko Online Gratis." />
+		<title>Keranjang | Toko Online Gratis</title>
+	</head>
+	<body>
+		<SiteHeader />
+
+		<main class="container">
+			<nav class="breadcrumb" aria-label="Navigasi">
+				<a href="/">Katalog</a>
+				<span aria-hidden="true">/</span>
+				<span aria-current="page">Keranjang</span>
+			</nav>
+
+			<h1>Keranjang Belanja</h1>
+			<div data-cart-content aria-live="polite"></div>
+		</main>
+
+		<footer class="site-footer">
+			<div class="container">
+				<p>Toko Online Gratis · Dibangun dengan Astro dan Supabase</p>
+			</div>
+		</footer>
+
+		<script>
+			import { formatRupiah } from '../lib/format';
+			import {
+				bacaKeranjang,
+				hapusItem,
+				hitungTotal,
+				onKeranjangBerubah,
+				ubahQty,
+				type KeranjangItem,
+			} from '../lib/keranjang';
+
+			const wadah = document.querySelector<HTMLElement>('[data-cart-content]')!;
+
+			function buat<T extends keyof HTMLElementTagNameMap>(
+				tag: T,
+				kelas?: string,
+				teks?: string,
+			): HTMLElementTagNameMap[T] {
+				const el = document.createElement(tag);
+				if (kelas) el.className = kelas;
+				if (teks !== undefined) el.textContent = teks;
+				return el;
+			}
+
+			function gambarPlaceholder(): HTMLElement {
+				const div = buat('div', 'thumb placeholder');
+				div.setAttribute('aria-hidden', 'true');
+				div.innerHTML =
+					'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+					'<rect x="3" y="3" width="18" height="18" rx="2"/>' +
+					'<circle cx="8.5" cy="8.5" r="1.5"/>' +
+					'<path d="m21 15-5-5L5 21"/></svg>';
+				return div;
+			}
+
+			function tombolQty(label: string, ariaLabel: string, aksi: () => void): HTMLButtonElement {
+				const tombol = buat('button', 'tombol-qty', label);
+				tombol.type = 'button';
+				tombol.setAttribute('aria-label', ariaLabel);
+				tombol.addEventListener('click', aksi);
+				return tombol;
+			}
+
+			function barisItem(item: KeranjangItem): HTMLLIElement {
+				const li = buat('li', 'cart-item');
+
+				if (item.image) {
+					const img = buat('img', 'thumb');
+					img.src = item.image;
+					img.alt = item.name;
+					img.loading = 'lazy';
+					li.append(img);
+				} else {
+					li.append(gambarPlaceholder());
+				}
+
+				const info = buat('div', 'cart-info');
+				info.append(buat('h2', 'cart-name', item.name));
+				info.append(buat('p', 'cart-price', formatRupiah(item.price)));
+
+				const kontrol = buat('div', 'qty-controls');
+				kontrol.append(
+					tombolQty('−', `Kurangi jumlah ${item.name}`, () => ubahQty(item.slug, -1)),
+					buat('span', 'qty-value', String(item.qty)),
+					tombolQty('+', `Tambah jumlah ${item.name}`, () => ubahQty(item.slug, 1)),
+					tombolQty('Hapus', `Hapus ${item.name} dari keranjang`, () => hapusItem(item.slug)),
+				);
+				info.append(kontrol);
+				li.append(info);
+
+				li.append(buat('p', 'subtotal', formatRupiah(item.price * item.qty)));
+				return li;
+			}
+
+			function render(): void {
+				const items = bacaKeranjang();
+				wadah.replaceChildren();
+
+				if (items.length === 0) {
+					const kosong = buat('div', 'empty');
+					kosong.append(buat('p', 'empty-title', 'Keranjang kamu masih kosong.'));
+					kosong.append(buat('p', undefined, 'Yuk, cari produk yang kamu suka dulu.'));
+					const tautan = buat('a', 'empty-link', '← Kembali ke katalog');
+					tautan.href = '/';
+					kosong.append(tautan);
+					wadah.append(kosong);
+					return;
+				}
+
+				const daftar = buat('ul', 'cart-list');
+				for (const item of items) daftar.append(barisItem(item));
+				wadah.append(daftar);
+
+				const ringkasan = buat('div', 'cart-total');
+				ringkasan.append(buat('span', undefined, 'Total'));
+				ringkasan.append(buat('strong', undefined, formatRupiah(hitungTotal(items))));
+				wadah.append(ringkasan);
+			}
+
+			render();
+			onKeranjangBerubah(render);
+		</script>
+
+		<style is:global>
+			h1 {
+				margin: 1rem 0 2rem;
+				font-size: clamp(2rem, 5vw, 2.75rem);
+				line-height: 1.15;
+				letter-spacing: -0.02em;
+			}
+
+			.cart-list {
+				list-style: none;
+				padding: 0;
+				margin: 0 0 1.5rem;
+				display: grid;
+				gap: 1rem;
+			}
+
+			.cart-item {
+				display: grid;
+				grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+				gap: 1rem;
+				align-items: center;
+				padding: 1rem;
+				background: #fff;
+				border: 1px solid #e7e4dd;
+				border-radius: 1rem;
+			}
+
+			.thumb {
+				width: 5.5rem;
+				height: 5.5rem;
+				object-fit: cover;
+				border-radius: 0.75rem;
+				background: #efede7;
+			}
+
+			.placeholder svg {
+				width: 2.5rem;
+				height: 2.5rem;
+			}
+
+			.cart-info {
+				min-width: 0;
+			}
+
+			.cart-name {
+				margin: 0;
+				font-size: 1rem;
+			}
+
+			.cart-price {
+				margin: 0.2rem 0 0;
+				color: #6b6862;
+				font-size: 0.875rem;
+			}
+
+			.qty-controls {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				gap: 0.5rem;
+				margin-top: 0.75rem;
+			}
+
+			.tombol-qty {
+				min-width: 2rem;
+				height: 2rem;
+				padding: 0 0.5rem;
+				border: 1px solid #d9d5cc;
+				border-radius: 0.5rem;
+				background: #fff;
+				color: #1c1b19;
+				font: inherit;
+				font-weight: 700;
+				line-height: 1;
+				cursor: pointer;
+			}
+
+			.tombol-qty:hover {
+				border-color: #166534;
+				color: #166534;
+			}
+
+			.tombol-qty:focus-visible {
+				outline: 3px solid #166534;
+				outline-offset: 2px;
+			}
+
+			.qty-value {
+				min-width: 1.5rem;
+				text-align: center;
+				font-weight: 700;
+			}
+
+			.subtotal {
+				margin: 0;
+				color: #166534;
+				font-weight: 700;
+				white-space: nowrap;
+			}
+
+			.cart-total {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 1rem;
+				padding: 1.25rem;
+				margin-bottom: 4rem;
+				background: #fff;
+				border: 1px solid #e7e4dd;
+				border-radius: 1rem;
+				font-size: 1.1rem;
+			}
+
+			.cart-total strong {
+				color: #166534;
+				font-size: 1.4rem;
+			}
+
+			.empty {
+				padding: 2rem;
+				margin-bottom: 4rem;
+				background: #fff;
+				border: 1px dashed #d9d5cc;
+				border-radius: 1rem;
+				color: #6b6862;
+				text-align: center;
+			}
+
+			.empty-title {
+				margin: 0 0 0.25rem;
+				color: #1c1b19;
+				font-size: 1.15rem;
+				font-weight: 700;
+			}
+
+			.empty p {
+				margin: 0;
+			}
+
+			.empty-link {
+				display: inline-block;
+				margin-top: 1.25rem;
+				color: #166534;
+				font-weight: 600;
+			}
+
+			@media (max-width: 32rem) {
+				.cart-item {
+					grid-template-columns: 4rem minmax(0, 1fr);
+				}
+
+				.thumb {
+					width: 4rem;
+					height: 4rem;
+				}
+
+				.subtotal {
+					grid-column: 2;
+				}
+			}
+		</style>
+	</body>
+</html>
