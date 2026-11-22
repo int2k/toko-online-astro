@@ -105,6 +105,11 @@ export function hapusItem(slug: string): KeranjangItem[] {
 	return simpan(bacaKeranjang().filter((item) => item.slug !== slug));
 }
 
+/** Kosongkan seluruh keranjang (dipakai tombol "Kosongkan keranjang" saat checkout). */
+export function kosongkanKeranjang(): KeranjangItem[] {
+	return simpan([]);
+}
+
 /** Jumlah total item (akumulasi qty) — dipakai badge di header. */
 export function hitungJumlahItem(items: KeranjangItem[]): number {
 	return items.reduce((total, item) => total + item.qty, 0);

@@ -1,6 +1,20 @@
 ---
 import SiteHeader from '../components/SiteHeader.astro';
 import '../styles/global.css';
+
+const nomorWhatsApp = import.meta.env.PUBLIC_WHATSAPP_NUMBER?.trim() ?? '';
+
+if (!nomorWhatsApp) {
+	throw new Error(
+		'PUBLIC_WHATSAPP_NUMBER belum diisi. Tambahkan ke .env (lihat .env.example) dengan format 628xxxxxxxxxx.',
+	);
+}
+
+if (!/^628\d+$/.test(nomorWhatsApp)) {
+	throw new Error(
+		'PUBLIC_WHATSAPP_NUMBER harus berformat 628xxxxxxxxxx (tanpa tanda + dan tanpa 0 di depan).',
+	);
+}
 ---
 
 <!doctype html>
@@ -26,6 +40,59 @@ import '../styles/global.css';
 
 			<h1>Keranjang Belanja</h1>
 			<div data-cart-content aria-live="polite"></div>
+
+			<form class="checkout-form" data-checkout-form data-nomor-wa={nomorWhatsApp}>
+				<h2>Data pemesanan</h2>
+				<p class="form-pengantar">Isi data berikut, lalu kirim pesanan lewat WhatsApp.</p>
+
+				<div class="field">
+					<label for="nama-pembeli">Nama <span aria-hidden="true">*</span></label>
+					<input
+						id="nama-pembeli"
+						name="nama"
+						type="text"
+						autocomplete="name"
+						placeholder="Nama kamu"
+						required
+					/>
+				</div>
+
+				<div class="field">
+					<label for="alamat-pengiriman">Alamat pengiriman <span aria-hidden="true">*</span></label>
+					<textarea
+						id="alamat-pengiriman"
+						name="alamat"
+						rows="3"
+						autocomplete="street-address"
+						placeholder="Alamat lengkap untuk pengiriman"
+						required></textarea>
+				</div>
+
+				<div class="field">
+					<label for="catatan-pesanan">
+						Catatan <span class="opsional">(opsional)</span>
+					</label>
+					<textarea
+						id="catatan-pesanan"
+						name="catatan"
+						rows="2"
+						placeholder="Contoh: tolong kirim siang hari"></textarea>
+				</div>
+
+				<div class="form-aksi">
+					<button type="submit" class="tombol-utama" data-tombol-pesan disabled>
+						Pesan via WhatsApp
+					</button>
+					<button type="button" class="tombol-sekunder" data-tombol-kosongkan disabled>
+						Kosongkan keranjang
+					</button>
+				</div>
+
+				<p class="form-catatan">
+					Pesanan baru terkirim setelah kamu mengirim pesan di WhatsApp. Keranjang sengaja tidak
+					dikosongkan otomatis — kalau kamu batal, barang tetap aman di sini.
+				</p>
+			</form>
 		</main>
 
 		<footer class="site-footer">
@@ -35,17 +102,23 @@ import '../styles/global.css';
 		</footer>
 
 		<script>
+			import { buatPesanWhatsApp } from '../lib/checkout';
 			import { formatRupiah } from '../lib/format';
 			import {
 				bacaKeranjang,
 				hapusItem,
 				hitungTotal,
+				kosongkanKeranjang,
 				onKeranjangBerubah,
 				ubahQty,
 				type KeranjangItem,
 			} from '../lib/keranjang';
 
 			const wadah = document.querySelector<HTMLElement>('[data-cart-content]')!;
+			const form = document.querySelector<HTMLFormElement>('[data-checkout-form]')!;
+			const tombolPesan = form.querySelector<HTMLButtonElement>('[data-tombol-pesan]')!;
+			const tombolKosongkan = form.querySelector<HTMLButtonElement>('[data-tombol-kosongkan]')!;
+			const nomorWhatsApp = form.dataset.nomorWa ?? '';
 
 			function buat<T extends keyof HTMLElementTagNameMap>(
 				tag: T,
@@ -112,7 +185,11 @@ import '../styles/global.css';
 				const items = bacaKeranjang();
 				wadah.replaceChildren();
 
-				if (items.length === 0) {
+				const adaIsi = items.length > 0;
+				tombolPesan.disabled = !adaIsi;
+				tombolKosongkan.disabled = !adaIsi;
+
+				if (!adaIsi) {
 					const kosong = buat('div', 'empty');
 					kosong.append(buat('p', 'empty-title', 'Keranjang kamu masih kosong.'));
 					kosong.append(buat('p', undefined, 'Yuk, cari produk yang kamu suka dulu.'));
@@ -132,6 +209,30 @@ import '../styles/global.css';
 				ringkasan.append(buat('strong', undefined, formatRupiah(hitungTotal(items))));
 				wadah.append(ringkasan);
 			}
+
+			form.addEventListener('submit', (event) => {
+				event.preventDefault();
+
+				const items = bacaKeranjang();
+				if (items.length === 0) return;
+
+				const dataForm = new FormData(form);
+				const pesan = buatPesanWhatsApp(items, {
+					nama: String(dataForm.get('nama') ?? ''),
+					alamat: String(dataForm.get('alamat') ?? ''),
+					catatan: String(dataForm.get('catatan') ?? ''),
+				});
+
+				window.open(
+					`https://wa.me/${nomorWhatsApp}?text=${encodeURIComponent(pesan)}`,
+					'_blank',
+					'noopener,noreferrer',
+				);
+			});
+
+			tombolKosongkan.addEventListener('click', () => {
+				kosongkanKeranjang();
+			});
 
 			render();
 			onKeranjangBerubah(render);
@@ -243,7 +344,7 @@ import '../styles/global.css';
 				justify-content: space-between;
 				gap: 1rem;
 				padding: 1.25rem;
-				margin-bottom: 4rem;
+				margin-bottom: 1.5rem;
 				background: #fff;
 				border: 1px solid #e7e4dd;
 				border-radius: 1rem;
@@ -257,7 +358,7 @@ import '../styles/global.css';
 
 			.empty {
 				padding: 2rem;
-				margin-bottom: 4rem;
+				margin-bottom: 1.5rem;
 				background: #fff;
 				border: 1px dashed #d9d5cc;
 				border-radius: 1rem;
@@ -283,6 +384,115 @@ import '../styles/global.css';
 				font-weight: 600;
 			}
 
+			.checkout-form {
+				padding: 1.5rem;
+				margin-bottom: 4rem;
+				background: #fff;
+				border: 1px solid #e7e4dd;
+				border-radius: 1rem;
+			}
+
+			.checkout-form h2 {
+				margin: 0;
+				font-size: 1.25rem;
+			}
+
+			.form-pengantar {
+				margin: 0.35rem 0 1.5rem;
+				color: #6b6862;
+				font-size: 0.9rem;
+			}
+
+			.field {
+				display: grid;
+				gap: 0.4rem;
+				margin-bottom: 1rem;
+			}
+
+			.field label {
+				font-weight: 600;
+			}
+
+			.opsional {
+				color: #6b6862;
+				font-weight: 400;
+			}
+
+			.field input,
+			.field textarea {
+				width: 100%;
+				padding: 0.7rem 0.85rem;
+				border: 1px solid #d9d5cc;
+				border-radius: 0.5rem;
+				background: #fff;
+				color: #1c1b19;
+				font: inherit;
+				resize: vertical;
+			}
+
+			.field input:focus-visible,
+			.field textarea:focus-visible {
+				outline: 3px solid #166534;
+				outline-offset: 1px;
+				border-color: #166534;
+			}
+
+			.form-aksi {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.75rem;
+				margin-top: 1.5rem;
+			}
+
+			.tombol-utama,
+			.tombol-sekunder {
+				padding: 0.8rem 1.25rem;
+				border-radius: 0.5rem;
+				font: inherit;
+				font-weight: 700;
+				cursor: pointer;
+			}
+
+			.tombol-utama {
+				border: 1px solid #166534;
+				background: #166534;
+				color: #fff;
+			}
+
+			.tombol-utama:hover:not(:disabled) {
+				background: #14532d;
+			}
+
+			.tombol-sekunder {
+				border: 1px solid #d9d5cc;
+				background: #fff;
+				color: #1c1b19;
+			}
+
+			.tombol-sekunder:hover:not(:disabled) {
+				border-color: #991b1b;
+				color: #991b1b;
+			}
+
+			.tombol-utama:focus-visible,
+			.tombol-sekunder:focus-visible {
+				outline: 3px solid #166534;
+				outline-offset: 2px;
+			}
+
+			.tombol-utama:disabled,
+			.tombol-sekunder:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+			}
+
+			.form-catatan {
+				margin: 1rem 0 0;
+				color: #6b6862;
+				font-size: 0.85rem;
+				line-height: 1.5;
+			}
+
 			@media (max-width: 32rem) {
 				.cart-item {
 					grid-template-columns: 4rem minmax(0, 1fr);
@@ -295,6 +505,10 @@ import '../styles/global.css';
 
 				.subtotal {
 					grid-column: 2;
+				}
+
+				.form-aksi button {
+					flex: 1 1 100%;
 				}
 			}
 		</style>
